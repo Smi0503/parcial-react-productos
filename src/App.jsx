@@ -1,20 +1,43 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TablaProductos from "./components/TablaProductos";
 
 function App() {
-  const productos = [
-    { id: 1, nombre: "Laptop", precio: 4500, stock: 10 },
-    { id: 2, nombre: "Mouse", precio: 150, stock: 25 },
-    { id: 3, nombre: "Teclado", precio: 250, stock: 15 },
-    { id: 4, nombre: "Monitor", precio: 1200, stock: 8 },
-    { id: 5, nombre: "Audífonos", precio: 350, stock: 20 }
-  ];
-
+  const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
 
+  // Obtener productos desde la API
+  useEffect(() => {
+    async function obtenerProductos() {
+      try {
+        const respuesta = await fetch(
+          "http://localhost:3000/api/productos"
+        );
+
+        if (!respuesta.ok) {
+          throw new Error("Error al consultar la API");
+        }
+
+        const datos = await respuesta.json();
+        setProductos(datos);
+      } catch (error) {
+        console.error(error);
+        setError("No se pudieron cargar los productos");
+      } finally {
+        setCargando(false);
+      }
+    }
+
+    obtenerProductos();
+  }, []);
+
+  // Buscar productos utilizando useState
   const productosFiltrados = productos.filter((producto) =>
-    producto.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    producto.nombre
+      .toLowerCase()
+      .includes(busqueda.toLowerCase())
   );
 
   return (
@@ -28,7 +51,13 @@ function App() {
         onChange={(e) => setBusqueda(e.target.value)}
       />
 
-      <TablaProductos productos={productosFiltrados} />
+      {cargando && <p>Cargando productos...</p>}
+
+      {error && <p>{error}</p>}
+
+      {!cargando && !error && (
+        <TablaProductos productos={productosFiltrados} />
+      )}
     </div>
   );
 }
